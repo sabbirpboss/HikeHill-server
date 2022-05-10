@@ -10,6 +10,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+function verifyJWT(req, res, next) {
+  const tokenInfo = req.headers.authorization;
+
+  if (!tokenInfo) {
+    return res.status(401).send({ message: "Unauthorize access" });
+  }
+  const token = tokenInfo.split(" ")[1];
+  jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+    if (err) {
+      return res.status(403).send({ message: "Forbidden access" });
+    } else {
+      req.decoded = decoded;
+      next();
+    }
+  });
+}
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.q4bl5.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -69,19 +86,18 @@ async function run() {
       });
     });
 
-    app.get('/myinventory', verifyJWT, async (req, res) => {
+    app.get("/myitem", verifyJWT, async (req, res) => {
       const decodedEmail = req?.decoded?.email;
       const email = req?.query?.email;
       if (email === decodedEmail) {
-          const query = { userEmail: email };
-          const cursor = inventoryCollection.find(query);
-          const cars = await cursor.toArray();
-          res.send(cars);
+        const query = { userEmail: email };
+        const cursor = itemCollection.find(query);
+        const items = await cursor.toArray();
+        res.send(items);
+      } else {
+        res.status(403).send({ message: "Forbidden Access" });
       }
-      else {
-          res.status(403).send({ message: 'Forbidden access' })
-      }
-  })
+    });
   } finally {
   }
 }
