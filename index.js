@@ -68,6 +68,20 @@ async function run() {
         res.send(result);
       });
     });
+
+    app.get('/myinventory', verifyJWT, async (req, res) => {
+      const decodedEmail = req?.decoded?.email;
+      const email = req?.query?.email;
+      if (email === decodedEmail) {
+          const query = { userEmail: email };
+          const cursor = inventoryCollection.find(query);
+          const cars = await cursor.toArray();
+          res.send(cars);
+      }
+      else {
+          res.status(403).send({ message: 'Forbidden access' })
+      }
+  })
   } finally {
   }
 }
